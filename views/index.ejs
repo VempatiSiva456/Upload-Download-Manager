@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <title>Upload & Download Manager</title>
+    <style>
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f2f2f2;
+            margin: 0;
+            padding: 0;
+        }
+
+        header {
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            padding: 10px;
+        }
+
+        h1 {
+            margin: 20px 0;
+        }
+
+        .container {
+            position: absolute;
+            max-width: 1200px; 
+            width: 80%;
+            height: 550px;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        }
+
+        h2 {
+            margin-top: 0;
+        }
+
+        label {
+            display: block;
+            font-weight: bold;
+        }
+
+        #bucketList {
+            list-style-type: none;
+            padding: 0;
+            display: none;
+        }
+
+        li {
+            margin: 5px 0;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .custom-file-input {
+            background-color: #333;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            display: inline-block;
+        }
+
+        .custom-file-input:hover {
+            background-color: #0056b3;
+        }
+
+        .file-name {
+            display: inline-block;
+            margin-left: 10px;
+        }
+
+        button {
+            background-color: #333;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .hidden {
+            display: none;
+        }
+        #progressContainer {
+            text-align: center;
+            padding: 10px;
+        }
+        
+        #progressBar {
+            width: 100%;
+            height: 20px;
+            background-color: #ccc;
+            position: relative;
+            border-radius: 5px;
+        }
+        
+        #progressFill {
+            width: 0;
+            height: 100%;
+            background-color: #333;
+            border-radius: 5px;
+            transition: width 0.2s;
+        }
+        
+        #progressText {
+            margin-top: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+    </style>
+</head>
+<body>
+    <header>
+        <h1><i class="fas fa-cloud-upload-alt"></i> Upload & Download Manager <i class="fas fa-cloud-download-alt"></i></h1>
+    </header>
+    <div class="container" id="dragContainer" >
+        <div>
+            <h2>List of Uploads</h2>
+            <p>Click on the respective file to Download it!</p>
+            <button id="bucketToggle"><i class="fas fa-eye"></i> Show Uploads</button>
+            <ul id="bucketList">
+            </ul>
+        </div>
+        <div>
+            <br>
+            <br>
+            <h2>Upload a New Item</h2>
+            <button for="fileInput" class="custom-file-input" id="toggleButton">
+                <i class="fas fa-cloud-upload-alt"></i> Choose a File
+            </button>
+            <span class="file-name"> <i class="fas fa-times"></i> No file chosen</span>
+            <input type="file" id="fileInput" name="file" class="hidden" />
+            <div id="dropArea" class="hidden" style="border: 2px dashed #333; cursor: pointer; padding: 20px; text-align: center; height: 67px; width: 240px; margin: 0 auto; background-color: #f2f2f2; border-radius: 10px;">
+                <p style="font-size: 18px; color: #333;"><i class="fas fa-cloud-upload-alt"></i> Drop a file here or click to choose a file.</p>
+            </div>
+            <br />
+            <div id="metaData"></div>
+            <div id="progressContainer" class="hidden">
+                <div id="progressBar">
+                    <div id="progressFill"></div>
+                </div>
+                <div id="progressText">0%</div>
+            </div>
+            <div id="tickIcon" class="hidden">
+                <i class="fas fa-check-circle" style="color: green;"></i> Uploaded
+              </div>
+            
+            <br>
+        </div>
+        <button id="sendButton" style="float: left;"><i class="fas fa-cloud-upload-alt"></i> Upload File</button>
+        <button id="pauseButton" style="float: left;"><i class="fas fa-cloud-upload-alt"></i> Pause</button>
+        <button id="resumeButton" style="float: left;"><i class="fas fa-cloud-upload-alt"></i> Resume</button>
+        <button id="restartButton" style="float: left;"><i class="fas fa-cloud-upload-alt"></i> Restart</button>
+    </div>
+    <script>
+        // JavaScript for drag and drop file upload
+const dropArea = document.getElementById('dropArea');
+const fileInput = document.getElementById('fileInput');
+const fileLabel = document.querySelector('.file-name');
+const toggleButton = document.getElementById('toggleButton');
+
+// Function to hide the drag and drop area
+function hideDropArea() {
+    dropArea.style.display = 'none';
+    fileInput.classList.add('hidden');
+}
+
+// Function to show the drag and drop area
+function showDropArea() {
+    dropArea.style.display = 'block';
+    fileInput.classList.remove('hidden');
+}
+
+dropArea.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropArea.style.border = '2px dashed #0056b3';
+    dropArea.style.cursor = 'pointer';
+});
+
+dropArea.addEventListener('dragleave', () => {
+    dropArea.style.border = '2px dashed #333';
+    dropArea.style.cursor = 'pointer';
+});
+
+dropArea.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropArea.style.border = '2px dashed #333';
+    dropArea.style.cursor = 'pointer';
+    const droppedFile = e.dataTransfer.files[0];
+    fileInput.files = e.dataTransfer.files;
+    fileLabel.textContent = droppedFile.name;
+    hideDropArea();
+});
+
+// Additional event listeners for clicking on the drop area
+dropArea.addEventListener('click', () => {
+    fileInput.click();
+});
+
+fileInput.addEventListener('change', () => {
+    if (fileInput.files.length > 0) {
+        fileLabel.textContent = fileInput.files[0].name;
+    } else {
+        fileLabel.innerHTML = '<i class="fas fa-times"></i> No file chosen';
+    }
+    hideDropArea(); // Always hide the drag and drop area when a file is selected
+});
+
+// Toggle between file input and drag and drop area when "Choose a File" button is clicked
+toggleButton.addEventListener('click', () => {
+    if (fileInput.classList.contains('hidden')) {
+        showDropArea(); // Show the drag and drop area
+        // Clear the selected file when toggling
+    } else {
+        hideDropArea(); // Hide the drag and drop area
+    }
+});
+
+
+        // JavaScript to toggle the visibility of the bucket list
+        const bucketToggle = document.getElementById('bucketToggle');
+        const bucketList = document.getElementById('bucketList');
+        const container = document.getElementById('dragContainer');
+
+        bucketToggle.addEventListener('click', () => {
+            if (bucketList.style.display === 'none' || bucketList.style.display === '') {
+                bucketList.style.display = 'block';
+                const listHeight = bucketList.clientHeight;
+                container.style.height = listHeight * 1.28 + 410 + 'px';
+                bucketToggle.innerHTML = '<i class="fas fa-eye-slash"></i> Hide Uploads';
+            } else {
+                bucketList.style.display = 'none';
+                container.style.height = '410px';
+                bucketToggle.innerHTML = '<i class="fas fa-eye"></i> Show Uploads';
+            }
+        });
+
+        // JavaScript for making the container movable
+        const dragContainer = document.getElementById('dragContainer');
+        let isDragging = false;
+        let offsetX, offsetY;
+
+        // Event listeners to handle dragging
+        dragContainer.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            offsetX = e.clientX - dragContainer.getBoundingClientRect().left;
+            offsetY = e.clientY - dragContainer.getBoundingClientRect().top;
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (isDragging) {
+                const x = e.clientX - offsetX;
+                const y = e.clientY - offsetY;
+                dragContainer.style.left = x + 'px';
+                dragContainer.style.top = y + 'px';
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
+    </script>
+</body>
+<script src="/minio/static/download.js"></script>
+<script src="/minio/static/upload.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/uuid@8.3.2/dist/umd/uuidv4.min.js"></script>
+</html>
